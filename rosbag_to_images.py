@@ -15,16 +15,23 @@ Each --topics entry becomes Cam_001, Cam_002, ... in that order. Frames are
 matched across cameras by nearest timestamp (within --slop seconds); a frame
 is only saved if every camera has a match, so all output folders stay the
 same length and in sync.
+
+Also writes <out>/realsense_factory_intrinsics.yml (camera_matrix +
+distortion_vector per camera, read from each topic's sibling /camera_info),
+in the format MC-Calib's cam_params_path expects - point your config's
+cam_params_path directly at this file. Pass --no-intrinsics to skip it (e.g.
+if a camera_info topic isn't actually available).
 """
 import argparse
 import bisect
 from pathlib import Path
 
 import cv2
+import numpy as np
 import rclpy.serialization
 import rosbag2_py
 from cv_bridge import CvBridge
-from sensor_msgs.msg import Image
+from sensor_msgs.msg import CameraInfo, Image
 
 
 def read_images(bag_path: str, topic: str):
@@ -46,6 +53,41 @@ def read_images(bag_path: str, topic: str):
     return out
 
 
+def read_first_camera_info(bag_path: str, topic: str) -> CameraInfo:
+    storage_options = rosbag2_py.StorageOptions(uri=bag_path, storage_id="mcap")
+    converter_options = rosbag2_py.ConverterOptions("", "")
+    reader = rosbag2_py.SequentialReader()
+    reader.open(storage_options, converter_options)
+    reader.set_filter(rosbag2_py.StorageFilter(topics=[topic]))
+    if not reader.has_next():
+        raise RuntimeError(f"no messages found on {topic}")
+    _topic_name, data, _t = reader.read_next()
+    return rclpy.serialization.deserialize_message(data, CameraInfo)
+
+
+def camera_info_topic(image_topic: str) -> str:
+    """.../color/image_raw -> .../color/camera_info (same namespace, sibling topic)."""
+    return image_topic.rsplit("/", 1)[0] + "/camera_info"
+
+
+def write_intrinsics_yml(path: Path, bag_path: str, image_topics):
+    """Write one camera_<i> entry per topic (camera_matrix + distortion_vector),
+    read from each topic's sibling camera_info - the format MC-Calib's
+    cam_params_path expects."""
+    fs = cv2.FileStorage(str(path), cv2.FILE_STORAGE_WRITE)
+    for i, image_topic in enumerate(image_topics):
+        info_topic = camera_info_topic(image_topic)
+        ci = read_first_camera_info(bag_path, info_topic)
+        K = np.array(ci.k, dtype=np.float64).reshape(3, 3)
+        D = np.array(ci.d, dtype=np.float64).reshape(1, -1)
+        fs.startWriteStruct(f"camera_{i}", cv2.FileNode_MAP)
+        fs.write("camera_matrix", K)
+        fs.write("distortion_vector", D)
+        fs.endWriteStruct()
+        print(f"  camera_{i}: intrinsics from {info_topic} ({ci.distortion_model}, {len(ci.d)} coeffs)")
+    fs.release()
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--bag", required=True, help="path to the bag directory (contains metadata.yaml)")
@@ -55,6 +97,8 @@ def main():
     ap.add_argument("--slop", type=float, default=0.02,
                      help="max time diff (s) to accept a cross-camera match (default 0.02)")
     ap.add_argument("--ext", default="png", help="output image extension (png/jpg/...)")
+    ap.add_argument("--no-intrinsics", action="store_true",
+                     help="skip writing realsense_factory_intrinsics.yml")
     args = ap.parse_args()
 
     slop_ns = int(args.slop * 1e9)
@@ -100,6 +144,16 @@ def main():
     print(f"Saved {saved} synchronized frames per camera into {out_root}")
     for d in cam_dirs:
         print(f"  {d} ({saved} images)")
+
+    if not args.no_intrinsics:
+        intrinsics_path = out_root / "realsense_factory_intrinsics.yml"
+        print(f"Writing intrinsics to {intrinsics_path} ...")
+        try:
+            write_intrinsics_yml(intrinsics_path, args.bag, args.topics)
+            print(f"Wrote {intrinsics_path} - point cam_params_path at this file.")
+        except RuntimeError as e:
+            print(f"Skipped intrinsics ({e}). Pass --no-intrinsics to silence this, "
+                  f"or check the topic has a sibling /camera_info.")
 
 
 if __name__ == "__main__":
