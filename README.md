@@ -26,6 +26,7 @@ python3 python_utils/reconstruct_pointcloud.py \
     --out /home/soumoroy/MC-Calib/data/Real_Images/rosbag2_mccalib/fused_cloud.ply \
     --preview /home/soumoroy/MC-Calib/data/Real_Images/rosbag2_mccalib/fused_cloud_preview.png
 ```
+<img width="1038" height="658" alt="Screenshot from 2026-09-07 18-06-40" src="https://github.com/user-attachments/assets/c409b041-6693-4ad1-8907-7f7da7453c34" />
 
 ## Per Cam PCD exporter
 ```
@@ -35,6 +36,8 @@ python3 python_utils/reconstruct_pointcloud.py \
     --out-prefix /home/soumoroy/MC-Calib/data/Real_Images/rosbag2_mccalib_objects/icp/cam \
     --max-depth 1.2
 ```
+<img width="1240" height="551" alt="Screenshot from 2026-09-06 23-03-40" src="https://github.com/user-attachments/assets/ad84ff55-fc84-460e-aed4-b0194476f174" />
+
 
 ## Coloured ICP
 ```
@@ -47,3 +50,5 @@ python3 colored_icp_refine.py \
     --preview /home/soumoroy/MC-Calib/data/Real_Images/rosbag2_mccalib_objects/icp/icp_preview.png \
     --combined-out /home/soumoroy/MC-Calib/data/Real_Images/rosbag2_mccalib_objects/icp/combined_icp_cloud.ply
 ```
+<img width="888" height="477" alt="Screenshot from 2026-09-07 13-48-26" src="https://github.com/user-attachments/assets/3d3df9cc-276c-4b7b-998c-7ce0a5a62567" />
+
