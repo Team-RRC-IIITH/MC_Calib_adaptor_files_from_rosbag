@@ -11,7 +11,7 @@ cd /home/soumoroy/MC-Calib/build
 ## rosbag2 to images MC-Calib format
 ```
 source /opt/ros/jazzy/setup.zsh                                                                                                         
-python3 /home/soumoroy/MC-Calib/python_utils/rosbag_to_images.py \
+/usr/bin/python3 /home/soumoroy/MC-Calib/python_utils/rosbag_to_images.py \
     --bag /home/soumoroy/data_collection/rosbag2_mccalib \
     --out /home/soumoroy/MC-Calib/data/Real_Images/rosbag2_mccalib \
     --topics /camera1/cam_1/color/image_raw /camera2/cam_2/color/image_raw
