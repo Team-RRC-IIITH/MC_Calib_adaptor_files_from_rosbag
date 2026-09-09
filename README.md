@@ -20,7 +20,7 @@ source /opt/ros/jazzy/setup.zsh
 ## reconstruct pointcloud
 ```
 source /opt/ros/jazzy/setup.zsh
-python3 python_utils/reconstruct_pointcloud.py \
+/usr/bin/python3 python_utils/reconstruct_pointcloud.py \
     --bag /home/soumoroy/data_collection/rosbag2_mccalib \
     --calib /home/soumoroy/MC-Calib/data/Real_Images/rosbag2_mccalib/realsense_2cam_calibrated.yml \
     --out /home/soumoroy/MC-Calib/data/Real_Images/rosbag2_mccalib/fused_cloud.ply \
